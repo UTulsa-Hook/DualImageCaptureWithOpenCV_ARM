@@ -84,7 +84,8 @@ using mvIMPACT_C::IPL_BUFHANDLE;
 #endif // #ifndef WRAP_ANY
 
 // C-API header will be imported into mvIMPACT::acquire if included from here
-#include </opt/mvIMPACT_acquire/mvDeviceManager/Include/mvDeviceManager.h>
+
+#include <mvDeviceManager.h>
 
 namespace mvIMPACT
 {

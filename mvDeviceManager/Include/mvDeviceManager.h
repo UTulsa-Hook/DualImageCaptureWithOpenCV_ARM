@@ -8,8 +8,8 @@
 #   include <stddef.h>
 #endif // #ifndef WRAP_ANY
 
-#include </opt/mvIMPACT_acquire/DriverBase/Include/mvDriverBaseEnums.h>
-#include </opt/mvIMPACT_acquire/mvPropHandling/Include/mvPropHandlingDatatypes.h>
+#include <mvDriverBaseEnums.h>
+#include <mvPropHandlingDatatypes.h>
 
 #ifdef __cplusplus
 extern "C" {

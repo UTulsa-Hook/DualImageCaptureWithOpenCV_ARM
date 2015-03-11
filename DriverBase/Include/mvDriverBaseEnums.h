@@ -82,7 +82,7 @@ namespace acquire
 {
 #endif // #if defined(MVIMPACT_ACQUIRE_H_) || defined(DOXYGEN_CPP_DOCUMENTATION)
 
-#include </opt/mvIMPACT_acquire/DriverBase/Include/mvVersionInfo.h>
+#include <mvVersionInfo.h>
 
 //-----------------------------------------------------------------------------
 /// \brief Defines which field triggers the start of the acquisition.
