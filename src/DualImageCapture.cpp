@@ -8,18 +8,25 @@
 
 #include <mvIMPACT_acquire.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <sstream>
 #include <stdio.h>
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
-#include <iostream>
 #include <errno.h>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+//#include <opencv2/opencv.hpp>
 
 
 using namespace std;
 using namespace mvIMPACT::acquire;
+using namespace cv;
 
 #define PRESS_A_KEY             \
     getchar();
@@ -167,47 +174,71 @@ int main( int /*argc*/, char* /*argv*/[] )
 //-----------------------------------------------------------------------------
 {
 	DeviceManager devMgr;
+	unsigned int left_camera, right_camera;
 	const unsigned int devCnt = devMgr.deviceCount();
-	if( devCnt == 0 )
+	if( devCnt < 2 )
 	{
-		cout << "No MATRIX VISION device found! Unable to continue!" << endl;
+		cout << devCnt << " cameras found. We require at least 2 to do stereo vision" << endl;
 		return 0;
 	}
-
-	vector<ThreadParameter*> threadParams;
-	for( unsigned int i = 0; i < devCnt; i++ )
+	if(!devMgr[0]->serial.read().compare("30000431")) //30000431 is the right camera in the test stand
 	{
-		threadParams.push_back( new ThreadParameter( devMgr[i] ) );
-		cout << devMgr[i]->family.read() << "(" << devMgr[i]->serial.read() << ")" << endl;
+		right_camera = 0;
+		left_camera = 1;
+	}else
+	{
+		right_camera = 1;
+		left_camera = 0;
 	}
+//	vector<ThreadParameter*> threadParams;
+//	for( unsigned int i = 0; i < devCnt; i++ )
+//	{
+//		threadParams.push_back( new ThreadParameter( devMgr[i] ) );
+//		cout << devMgr[i]->family.read() << "(" << devMgr[i]->serial.read() << ")" << endl;
+//	}
 
 	cout << "Press return to end the acquisition( the initialisation of the devices might take some time )" << endl;
-	for( unsigned int i = 0; i < devCnt; i++ ){
+	//for( unsigned int i = 0; i < devCnt; i++ ){
 	try
-		{
-			threadParams[i]->device()->open();
-		}
-		catch( const ImpactAcquireException& e )
-		{
-			// this e.g. might happen if the same device is already opened in another process...
-			cout << "An error occurred while opening the device " << threadParams[i]->device()->serial.read()
-				 << "(error code: " << e.getErrorCode() << "(" << e.getErrorCodeAsString() << ")). Terminating thread." << endl
-				 << "Press [ENTER] to end the application..."
-				 << endl;
-			PRESS_A_KEY
-			return 0;
-		}
-	// now all threads will start running...
-
+	{
+		devMgr[right_camera]->open();
+//		threadParams[i]->device()->open();
 	}
+	catch( const ImpactAcquireException& e )
+	{
+		// this e.g. might happen if the same device is already opened in another process...
+		cout << "An error occurred while opening the right camera (device " << devMgr[right_camera]->serial.read()
+			 << ") (error code: " << e.getErrorCode() << "(" << e.getErrorCodeAsString() << ")). Terminating thread." << endl
+			 << "Press [ENTER] to end the application..."
+			 << endl;
+		PRESS_A_KEY
+		return 0;
+	}
+	try
+	{
+		devMgr[left_camera]->open();
+//		threadParams[i]->device()->open();
+	}
+	catch( const ImpactAcquireException& e )
+	{
+		// this e.g. might happen if the same device is already opened in another process...
+		cout << "An error occurred while opening the left camera (device " << devMgr[left_camera]->serial.read()
+			 << ") (error code: " << e.getErrorCode() << "(" << e.getErrorCodeAsString() << ")). Terminating thread." << endl
+			 << "Press [ENTER] to end the application..."
+			 << endl;
+		PRESS_A_KEY
+		return 0;
+	}
+	// now all threads will start running...
+	//}
 	cout << "Acquisition Complete" <<endl;
 
 	// establish access to the statistic properties
-	Statistics statistics0( threadParams[0]->device() );
-	Statistics statistics1( threadParams[1]->device() );
+	Statistics right_camera_statistics( devMgr[right_camera]);
+	Statistics left_camera_statistics( devMgr[left_camera] );
 	// create an interface to the device found
-	FunctionInterface fi0( threadParams[0]->device() );
-	FunctionInterface fi1( threadParams[1]->device() );
+	FunctionInterface right_camera_fi( devMgr[right_camera] );
+	FunctionInterface left_camera_fi( devMgr[left_camera] );
 
 	//prefill the capture queue. There can be more then 1 queue for some device, but for this sample
 	// we will work with the default capture queue. If a device supports more then one capture or result
@@ -215,21 +246,21 @@ int main( int /*argc*/, char* /*argv*/[] )
 	// queue only. Request as many images as possible. If there are no more free requests 'DEV_NO_FREE_REQUEST_AVAILABLE'
 	// will be returned by the driver.
 	int result = DMR_NO_ERROR;
-	SystemSettings ss0( threadParams[0]->device() );
-	SystemSettings ss1( threadParams[1]->device() );
-	const int REQUEST_COUNT0 = ss0.requestCount.read();
-	const int REQUEST_COUNT1 = ss1.requestCount.read();
-	for( int i = 0; i < REQUEST_COUNT0; i++ )
+	SystemSettings right_camera_ss( devMgr[right_camera] );
+	SystemSettings left_camera_ss( devMgr[left_camera] );
+	const int RIGHT_REQUEST_COUNT = right_camera_ss.requestCount.read();
+	const int LEFT_REQUEST_COUNT = left_camera_ss.requestCount.read();
+	for( int i = 0; i < RIGHT_REQUEST_COUNT; i++ )
 	{
-	   result = fi0.imageRequestSingle();
+	   result = right_camera_fi.imageRequestSingle();
 	   if( result != DMR_NO_ERROR )
 	   {
 		   cout << "Error while filling the request queue: " << ImpactAcquireException::getErrorCodeAsString( result ) << endl;
 	   }
 	}
-	for( int i = 0; i < REQUEST_COUNT1; i++ )
+	for( int i = 0; i < LEFT_REQUEST_COUNT; i++ )
 	{
-		result = fi1.imageRequestSingle();
+		result = left_camera_fi.imageRequestSingle();
 		if( result != DMR_NO_ERROR )
 		{
 			cout << "Error while filling the request queue: " << ImpactAcquireException::getErrorCodeAsString( result ) << endl;
@@ -246,120 +277,291 @@ int main( int /*argc*/, char* /*argv*/[] )
 	// can't free it unless we have a assigned the display to a new buffer.
 	int lastRequestNr = INVALID_ID;
 
+	//Mat image(Size(1280,960), CV_8UC1);
+	//Mat image(Size(pRequest->imageWidth.read(), pRequest->imageHeight.read()), CV_8UC1, reinterpret_cast<char*>( pRequest->imageData.read() ), Mat::AUTO_STEP);
+	namedWindow("LeftImage", WINDOW_NORMAL);
+	moveWindow("LeftImage", 705, 20);
+	resizeWindow("LeftImage", 640, 480);
+	namedWindow("RightImage", WINDOW_NORMAL);
+	moveWindow("RightImage", 0, 20);
+	resizeWindow("RightImage", 640, 480);
+	namedWindow("LeftUImage", WINDOW_NORMAL);
+	moveWindow("LeftUImage", 705, 550);
+	resizeWindow("LeftUImage", 640, 480);
+	namedWindow("RightUImage", WINDOW_NORMAL);
+	moveWindow("RightUImage", 0, 550);
+	resizeWindow("RightUImage", 640, 480);
+	//bool first_time = true;
+	int returnkey;
+	string left_camera_file_name;
+	string right_camera_file_name;
+	unsigned int image_num = 0;
+	Mat right_image;
+	Mat left_image;
 
-	//FIRST CAMERA
-	// wait for results from the default capture queue
-	requestNr = fi0.imageRequestWaitFor( timeout_ms );
-	if( fi0.isRequestNrValid( requestNr ) )
+	//Pull in the camera calibration
+	Mat CM1;// = Mat(3, 3, CV_64FC1);
+	Mat CM2;// = Mat(3, 3, CV_64FC1);
+	Mat D1, D2;
+	Mat R, T, E, F;
+
+	//Pull in the intrinsic camera calibration for the left camera
+	FileStorage fs("/home/loyd-hook/0Projects/SV/software/eclipse_ws/CameraCalibration/Debug/mycalib.yml", FileStorage::READ);
+	if(!fs.isOpened())
 	{
-		pRequest = fi0.getRequest( requestNr );
+		printf("Failed to open file mycalib on left image");
+		exit (-1);
+	}
+	fs["M1"] >> CM1;
+	fs["D1"] >> D1;
+	fs["M2"] >> CM2;
+	fs["D2"] >> D2;
+	fs.release();
+
+	for(int in = 0;;in++){
+	//Right CAMERA
+	// wait for results from the default capture queue
+	requestNr = right_camera_fi.imageRequestWaitFor( timeout_ms );
+
+
+	//Mat image(Size(1280,960), CV_8UC1);
+	if( right_camera_fi.isRequestNrValid( requestNr ) )
+	{
+		pRequest = right_camera_fi.getRequest( requestNr );
 		if( pRequest->isOK() )
 		{
 			// here we will save all the pictures as .bmp
 			// we will also only keep the most recent 10 pictures by deleting the previous ones
 			// this uses stringstream to store string+integer
 			// converts strings to char array in order to remove the file
-			ostringstream mystring,mystring2;
-			mystring << "/home/zkirkendoll/Documents/Images/DualImageCapture/C" << threadParams[0]->device()->serial.read() <<"_"<< "1.bmp";
+
+			//char mystring2[4];
+			//spsetwrintf(mystring2, "%d", in);
+			//mystring = "/home/loyd-hook/0Projects/SV/Images/DevelopmentPics00/" + threadParams[0]->device()->serial.read() + "_" + mystring2  + ".jpg";
+			//cout << mystring <<endl;
 			/*mystring2 << "/home/zkirkendoll/Documents/Images/Continuous2/test" << pThreadParameter->device()->serial.read() <<"_"<<cnt << ".bmp";
+
 			char test[100];
 			for(unsigned int i=0; i<=mystring2.str().size();i++)
 			{
 				test[i]=mystring2.str()[i];
 			}
 			//remove(test);*/
-			SaveBMP( mystring.str(), reinterpret_cast<char*>( pRequest->imageData.read() ), pRequest->imageWidth.read(), pRequest->imageHeight.read(), pRequest->imageLinePitch.read(), pRequest->imagePixelPitch.read() * 8 );
-			// here we can display some statistical information every 100th image
-			cout << "Info from " << threadParams[0]->device()->serial.read()
-				 << ": " << statistics0.framesPerSecond.name() << ": " << statistics0.framesPerSecond.readS()
-				 << ", " << statistics0.errorCount.name() << ": " << statistics0.errorCount.readS()
-				 << ", " << statistics0.captureTime_s.name() << ": " << statistics0.captureTime_s.readS() << endl;
+			Mat image(Size(pRequest->imageWidth.read(), pRequest->imageHeight.read()), CV_8UC1, pRequest->imageData.read(), Mat::AUTO_STEP);
+			image.copyTo(right_image);
+			Mat uimage;
+			undistort(right_image, uimage, CM2, D2);
+
+			//undistort the image and show that one instead...or the original
+			imshow("RightImage", image);
+			imshow("RightUImage", uimage);
+
+			//printf("press any key to continue...");
+
+
+			//waitKey(0);
+			//destroyWindow("Image");
 
 		}
 		else
 		{
 			cout << "Error: " << pRequest->requestResult.readS() << endl;
 		}
-		if( fi0.isRequestNrValid( lastRequestNr ) )
+		if( right_camera_fi.isRequestNrValid( lastRequestNr ) )
 		{
 			// this image has been displayed thus the buffer is no longer needed...
-			fi0.imageRequestUnlock( lastRequestNr );
+			right_camera_fi.imageRequestUnlock( lastRequestNr );
 		}
 		lastRequestNr = requestNr;
 		// send a new image request into the capture queue
-		fi0.imageRequestSingle();
+		right_camera_fi.imageRequestSingle();
 	}
 	else
 	{
 		// If the error code is -2119(DEV_WAIT_FOR_REQUEST_FAILED), the documentation will provide
 		// additional information under TDMR_ERROR in the interface reference (
-		cout << "imageRequestWaitFor failed (" << requestNr << ", " << ImpactAcquireException::getErrorCodeAsString( requestNr ) << ", device " << threadParams[0]->device()->serial.read() << ")"
+		cout << "imageRequestWaitFor failed (" << requestNr << ", " << ImpactAcquireException::getErrorCodeAsString( requestNr ) << ", device " << devMgr[right_camera]->serial.read() << ")"
 			 << ", timeout value too small?" << endl;
+	}
+	//Left camera
+	//for(int in = 0;;in++){
+	//FIRST CAMERA
+	// wait for results from the default capture queue
+	requestNr = left_camera_fi.imageRequestWaitFor( timeout_ms );
+
+
+	//Mat image(Size(1280,960), CV_8UC1);
+	if( left_camera_fi.isRequestNrValid( requestNr ) )
+	{
+		pRequest = left_camera_fi.getRequest( requestNr );
+		if( pRequest->isOK() )
+		{
+			// here we will save all the pictures as .bmp
+			// we will also only keep the most recent 10 pictures by deleting the previous ones
+			// this uses stringstream to store string+integer
+			// converts strings to char array in order to remove the file
+
+			//char mystring2[4];
+			//sprintf(mystring2, "%d", in);
+			//mystring = "/home/loyd-hook/0Projects/SV/Images/DevelopmentPics00/" + threadParams[0]->device()->serial.read() + "_" + mystring2  + ".jpg";
+			//cout << mystring <<endl;
+			/*mystring2 << "/home/zkirkendoll/Documents/Images/Continuous2/test" << pThreadParameter->device()->serial.read() <<"_"<<cnt << ".bmp";
+
+			char test[100];
+			for(unsigned int i=0; i<=mystring2.str().size();i++)
+			{
+				test[i]=mystring2.str()[i];
+			}
+			//remove(test);*/
+			Mat image(Size(pRequest->imageWidth.read(), pRequest->imageHeight.read()), CV_8UC1, pRequest->imageData.read(), Mat::AUTO_STEP);
+			image.copyTo(left_image);
+			Mat uimage;
+			undistort(left_image, uimage, CM1, D1);
+
+			//undistort the image and show that one instead...or the original
+			imshow("LeftImage", image);
+			imshow("LeftUImage", uimage);
+
+			//printf("press any key to continue...");
+
+
+			//waitKey(0);
+			//destroyWindow("Image");
+
+		}
+		else
+		{
+			cout << "Error: " << pRequest->requestResult.readS() << endl;
+		}
+		if( left_camera_fi.isRequestNrValid( lastRequestNr ) )
+		{
+			// this image has been displayed thus the buffer is no longer needed...
+			left_camera_fi.imageRequestUnlock( lastRequestNr );
+		}
+		lastRequestNr = requestNr;
+		// send a new image request into the capture queue
+		left_camera_fi.imageRequestSingle();
+	}
+	else
+	{
+		// If the error code is -2119(DEV_WAIT_FOR_REQUEST_FAILED), the documentation will provide
+		// additional information under TDMR_ERROR in the interface reference (
+		cout << "imageRequestWaitFor failed (" << requestNr << ", " << ImpactAcquireException::getErrorCodeAsString( requestNr ) << ", device " << devMgr[left_camera]->serial.read() << ")"
+			 << ", timeout value too small?" << endl;
+	}
+	//Process
+	returnkey = waitKey(50);
+	if(returnkey > 0)
+	{
+		cout << "Return Key Pressed is " << returnkey << endl;
+	}
+	if(returnkey == 1048691) //'s' key
+	{
+		cout << "Right Image height is " << right_image.rows << " width " << right_image.cols << endl
+			 << "Info from " << devMgr[right_camera]->serial.read()
+			 << ": " << right_camera_statistics.framesPerSecond.name() << ": " << right_camera_statistics.framesPerSecond.readS()
+			 << ", " << right_camera_statistics.errorCount.name() << ": " << right_camera_statistics.errorCount.readS()
+			 << ", " << right_camera_statistics.captureTime_s.name() << ": " << right_camera_statistics.captureTime_s.readS() << endl;
+
+		cout << "Image height is " << left_image.rows << " width " << left_image.cols << endl
+					 << "Info from " << devMgr[left_camera]->serial.read()
+					 << ": " << left_camera_statistics.framesPerSecond.name() << ": " << left_camera_statistics.framesPerSecond.readS()
+					 << ", " << left_camera_statistics.errorCount.name() << ": " << left_camera_statistics.errorCount.readS()
+					 << ", " << left_camera_statistics.captureTime_s.name() << ": " << left_camera_statistics.captureTime_s.readS() << endl;
+	}
+	else if(returnkey == 1048688) // 'p' ket
+	{
+		cout << "Images are paused press any key to resume" << endl;
+		waitKey(0);
+	}
+	else if(returnkey == 1048586) //enter key
+	{
+		ostringstream ssr, ssl;
+		ssl << "/home/loyd-hook/0Projects/SV/Images/DevelopmentPics06/SD06_O" << setw(4) << setfill('0') << image_num << "_0.bmp"; // see wiki for naming convention
+		left_camera_file_name = ssl.str();
+		imwrite(left_camera_file_name, left_image);
+		cout << "Left image stored at" << ssl.str() << endl;
+
+		ssr << "/home/loyd-hook/0Projects/SV/Images/DevelopmentPics06/SD06_O" << setw(4) << setfill('0') << image_num << "_1.bmp";
+		right_camera_file_name = ssr.str();
+		imwrite(right_camera_file_name, right_image);
+		cout << "Right image stored at" << ssr.str() << endl;
+
+		image_num++;
+	}
+	else if(returnkey == 1048603) //esc key
+	{
+		break;
+	}
+	//break;
 	}
 	//SECOND CAMERA
 	// wait for results from the default capture queue
-	requestNr = fi1.imageRequestWaitFor( timeout_ms );
-	if( fi1.isRequestNrValid( requestNr ) )
-	{
-		pRequest = fi1.getRequest( requestNr );
-		if( pRequest->isOK() )
-		{
-			// here we will save all the pictures as .bmp
-			// we will also only keep the most recent 10 pictures by deleting the previous ones
-			// this uses stringstream to store string+integer
-			// converts strings to char array in order to remove the file
-			ostringstream mystring,mystring2;
-			mystring << "/home/zkirkendoll/Documents/Images/DualImageCapture/C" << threadParams[1]->device()->serial.read() <<"_"<< "1.bmp";
-			/*mystring2 << "/home/zkirkendoll/Documents/Images/Continuous2/test" << pThreadParameter->device()->serial.read() <<"_"<<cnt << ".bmp";
-			char test[100];
-			for(unsigned int i=0; i<=mystring2.str().size();i++)
-			{
-				test[i]=mystring2.str()[i];
-			}
-			//remove(test);*/
-			SaveBMP( mystring.str(), reinterpret_cast<char*>( pRequest->imageData.read() ), pRequest->imageWidth.read(), pRequest->imageHeight.read(), pRequest->imageLinePitch.read(), pRequest->imagePixelPitch.read() * 8 );
-			// here we can display some statistical information every 100th image
-			cout << "Info from " << threadParams[1]->device()->serial.read()
-				 << ": " << statistics1.framesPerSecond.name() << ": " << statistics1.framesPerSecond.readS()
-				 << ", " << statistics1.errorCount.name() << ": " << statistics1.errorCount.readS()
-				 << ", " << statistics1.captureTime_s.name() << ": " << statistics1.captureTime_s.readS() << endl;
-		}
-		else
-		{
-			cout << "Error: " << pRequest->requestResult.readS() << endl;
-		}
-		if( fi1.isRequestNrValid( lastRequestNr ) )
-		{
-			// this image has been displayed thus the buffer is no longer needed...
-			fi1.imageRequestUnlock( lastRequestNr );
-		}
-		lastRequestNr = requestNr;
-		// send a new image request into the capture queue
-		fi1.imageRequestSingle();
-	}
-	else
-	{
-		// If the error code is -2119(DEV_WAIT_FOR_REQUEST_FAILED), the documentation will provide
-		// additional information under TDMR_ERROR in the interface reference (
-		cout << "imageRequestWaitFor failed (" << requestNr << ", " << ImpactAcquireException::getErrorCodeAsString( requestNr ) << ", device " << threadParams[1]->device()->serial.read() << ")"
-			 << ", timeout value too small?" << endl;
-	}
+//	requestNr = fi1.imageRequestWaitFor( timeout_ms );
+//	if( fi1.isRequestNrValid( requestNr ) )
+//	{
+//		pRequest = fi1.getRequest( requestNr );
+//		if( pRequest->isOK() )
+//		{
+//			// here we will save all the pictures as .bmp
+//			// we will also only keep the most recent 10 pictures by deleting the previous ones
+//			// this uses stringstream to store string+integer
+//			// converts strings to char array in order to remove the file
+//			ostringstream mystring,mystring2;
+//			mystring << "/home/loyd-hook/0Projects/SV/StereoPairJunk/test/" << threadParams[1]->device()->serial.read() <<"_"<< "1.bmp";
+//			/*mystring2 << "/home/zkirkendoll/Documents/Images/Continuous2/test" << pThreadParameter->device()->serial.read() <<"_"<<cnt << ".bmp";
+//			char test[100];
+//			for(unsigned int i=0; i<=mystring2.str().size();i++)
+//			{
+//				test[i]=mystring2.str()[i];
+//			}
+//			//remove(test);*/
+//			SaveBMP( mystring.str(), reinterpret_cast<char*>( pRequest->imageData.read() ), pRequest->imageWidth.read(), pRequest->imageHeight.read(), pRequest->imageLinePitch.read(), pRequest->imagePixelPitch.read() * 8 );
+//			// here we can display some statistical information every 100th image
+//			cout << "Info from " << threadParams[1]->device()->serial.read()
+//				 << ": " << statistics1.framesPerSecond.name() << ": " << statistics1.framesPerSecond.readS()
+//				 << ", " << statistics1.errorCount.name() << ": " << statistics1.errorCount.readS()
+//				 << ", " << statistics1.captureTime_s.name() << ": " << statistics1.captureTime_s.readS() << endl;
+//		}
+//		else
+//		{
+//			cout << "Error: " << pRequest->requestResult.readS() << endl;
+//		}
+//		if( fi1.isRequestNrValid( lastRequestNr ) )
+//		{
+//			// this image has been displayed thus the buffer is no longer needed...
+//			fi1.imageRequestUnlock( lastRequestNr );
+//		}
+//		lastRequestNr = requestNr;
+//		// send a new image request into the capture queue
+//		fi1.imageRequestSingle();
+//	}
+//	else
+//	{
+//		// If the error code is -2119(DEV_WAIT_FOR_REQUEST_FAILED), the documentation will provide
+//		// additional information under TDMR_ERROR in the interface reference (
+//		cout << "imageRequestWaitFor failed (" << requestNr << ", " << ImpactAcquireException::getErrorCodeAsString( requestNr ) << ", device " << threadParams[1]->device()->serial.read() << ")"
+//			 << ", timeout value too small?" << endl;
+//	}
 
 	// free the last potential locked request
-	if( fi0.isRequestNrValid( requestNr ) )
+	if( right_camera_fi.isRequestNrValid( requestNr ) )
 	{
-		fi0.imageRequestUnlock( requestNr );
+		right_camera_fi.imageRequestUnlock( requestNr );
 	}
 	// clear the request queue
-	fi0.imageRequestReset( 0, 0 );
+	right_camera_fi.imageRequestReset( 0, 0 );
 	// free the last potential locked request
-	if( fi1.isRequestNrValid( requestNr ) )
-	{
-		fi1.imageRequestUnlock( requestNr );
-	}
-	// clear the request queue
-	fi1.imageRequestReset( 0, 0 );
-
+//	if( fi1.isRequestNrValid( requestNr ) )
+//	{
+//		fi1.imageRequestUnlock( requestNr );
+//	}
+//	// clear the request queue
+//	fi1.imageRequestReset( 0, 0 );
+//	printf("press any key to continue...");
+	fflush(stdout);
+//	waitKey();
+	printf("\n");
 	cout << "Image Acquisition Complete!" << endl;
 	return 0;
 }

@@ -38,19 +38,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: DualImageCapture
+all: DualImageCaptureWithOpenCV
 
 # Tool invocations
-DualImageCapture: $(OBJS) $(USER_OBJS)
+DualImageCaptureWithOpenCV: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L"/home/zkirkendoll/workspace/DualImageCapture/lib/x86_64" -o "DualImageCapture" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L"/home/loyd-hook/0Projects/SV/software/eclipse_ws/DualImageCaptureWithOpenCV/lib/x86_64" -L/usr/local/lib -o "DualImageCaptureWithOpenCV" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) DualImageCapture
+	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) DualImageCaptureWithOpenCV
 	-@echo ' '
 
 .PHONY: all clean dependents

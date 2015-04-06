@@ -17,7 +17,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -I"/home/zkirkendoll/workspace/DualImageCapture/mvIMPACT_CPP" -I"/home/zkirkendoll/workspace/DualImageCapture/DriverBase/Include" -I"/home/zkirkendoll/workspace/DualImageCapture/mvPropHandling/Include" -I"/home/zkirkendoll/workspace/DualImageCapture/mvDeviceManager/Include" -O0 -g3 -pedantic -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -std=gnu++11 -o "$@" "$<"
+	g++ -I"/home/loyd-hook/0Projects/SV/software/eclipse_ws/DualImageCaptureWithOpenCV/mvIMPACT_CPP" -I/usr/local/include -I"/home/loyd-hook/0Projects/SV/software/eclipse_ws/DualImageCaptureWithOpenCV/DriverBase/Include" -I"/home/loyd-hook/0Projects/SV/software/eclipse_ws/DualImageCaptureWithOpenCV/mvPropHandling/Include" -I"/home/loyd-hook/0Projects/SV/software/eclipse_ws/DualImageCaptureWithOpenCV/mvDeviceManager/Include" -O0 -g3 -pedantic -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -std=gnu++11 -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
