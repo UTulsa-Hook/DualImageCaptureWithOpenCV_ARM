@@ -5,7 +5,6 @@
 // Copyright   : 
 // Description : Dual Camera, Single Image Pair Capture in C++, Ansi-style
 //============================================================================
-
 #include <mvIMPACT_acquire.h>
 #include <iostream>
 #include <iomanip>
@@ -305,18 +304,20 @@ int main( int /*argc*/, char* /*argv*/[] )
 	Mat D1, D2;
 	Mat R, T, E, F;
 
+	//Commented out by nathan 4/15
+
 	//Pull in the intrinsic camera calibration for the left camera
-	FileStorage fs("/home/loyd-hook/0Projects/SV/software/eclipse_ws/CameraCalibration/Debug/mycalib.yml", FileStorage::READ);
-	if(!fs.isOpened())
-	{
-		printf("Failed to open file mycalib on left image");
-		exit (-1);
-	}
-	fs["M1"] >> CM1;
-	fs["D1"] >> D1;
-	fs["M2"] >> CM2;
-	fs["D2"] >> D2;
-	fs.release();
+	//FileStorage fs("/home/loyd-hook/0Projects/SV/software/eclipse_ws/CameraCalibration/Debug/mycalib.yml", FileStorage::READ);
+	//if(!fs.isOpened())
+	//{
+	//	printf("Failed to open file mycalib on left image");
+	//	exit (-1);
+	//}
+	//fs["M1"] >> CM1;
+	//fs["D1"] >> D1;
+	//fs["M2"] >> CM2;
+	//fs["D2"] >> D2;
+	//fs.release();
 
 	for(int in = 0;;in++){
 	//Right CAMERA
@@ -350,11 +351,11 @@ int main( int /*argc*/, char* /*argv*/[] )
 			Mat image(Size(pRequest->imageWidth.read(), pRequest->imageHeight.read()), CV_8UC1, pRequest->imageData.read(), Mat::AUTO_STEP);
 			image.copyTo(right_image);
 			Mat uimage;
-			undistort(right_image, uimage, CM2, D2);
+			//undistort(right_image, uimage, CM2, D2);
 
 			//undistort the image and show that one instead...or the original
 			imshow("RightImage", image);
-			imshow("RightUImage", uimage);
+			//imshow("RightUImage", uimage);
 
 			//printf("press any key to continue...");
 
@@ -416,11 +417,11 @@ int main( int /*argc*/, char* /*argv*/[] )
 			Mat image(Size(pRequest->imageWidth.read(), pRequest->imageHeight.read()), CV_8UC1, pRequest->imageData.read(), Mat::AUTO_STEP);
 			image.copyTo(left_image);
 			Mat uimage;
-			undistort(left_image, uimage, CM1, D1);
+			//undistort(left_image, uimage, CM1, D1);
 
 			//undistort the image and show that one instead...or the original
 			imshow("LeftImage", image);
-			imshow("LeftUImage", uimage);
+			//imshow("LeftUImage", uimage);
 
 			//printf("press any key to continue...");
 
@@ -477,12 +478,12 @@ int main( int /*argc*/, char* /*argv*/[] )
 	else if(returnkey == 1048586) //enter key
 	{
 		ostringstream ssr, ssl;
-		ssl << "/home/loyd-hook/0Projects/SV/Images/DevelopmentPics06/SD06_O" << setw(4) << setfill('0') << image_num << "_0.bmp"; // see wiki for naming convention
+		ssl << "/home/hutch/workspace/DualImageCaptureWithOpenCV/pics/SD06_O" << setw(4) << setfill('0') << image_num << "_0.bmp"; // see wiki for naming convention
 		left_camera_file_name = ssl.str();
 		imwrite(left_camera_file_name, left_image);
 		cout << "Left image stored at" << ssl.str() << endl;
 
-		ssr << "/home/loyd-hook/0Projects/SV/Images/DevelopmentPics06/SD06_O" << setw(4) << setfill('0') << image_num << "_1.bmp";
+		ssr << "/home/hutch/workspace/DualImageCaptureWithOpenCV/pics/SD06_O" << setw(4) << setfill('0') << image_num << "_1.bmp";
 		right_camera_file_name = ssr.str();
 		imwrite(right_camera_file_name, right_image);
 		cout << "Right image stored at" << ssr.str() << endl;

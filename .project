@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>DualImageCaptureWithOpenCV</name>
+	<name>DualImageCaptureWithOpenCV_ARM</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -24,4 +24,61 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>libmvBlueFOX.so</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libmvBlueFOX.so</location>
+		</link>
+		<link>
+			<name>libmvBlueFOX.so.2.11.9</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libmvBlueFOX.so.2.11.9</location>
+		</link>
+		<link>
+			<name>libmvDeviceManager.so</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libmvDeviceManager.so</location>
+		</link>
+		<link>
+			<name>libmvDeviceManager.so.2.11.9</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libmvDeviceManager.so.2.11.9</location>
+		</link>
+		<link>
+			<name>libmvPropHandling.so</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libmvPropHandling.so</location>
+		</link>
+		<link>
+			<name>libmvPropHandling.so.2.11.9</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libmvPropHandling.so.2.11.9</location>
+		</link>
+		<link>
+			<name>libusb-1.0.so.0</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libusb-1.0.so.0</location>
+		</link>
+		<link>
+			<name>libusb-1.0.so.0.0.0</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libusb-1.0.so.0.0.0</location>
+		</link>
+		<link>
+			<name>libwxPropGrid.so</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libwxPropGrid.so</location>
+		</link>
+		<link>
+			<name>libwxPropGrid.so.2</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libwxPropGrid.so.2</location>
+		</link>
+		<link>
+			<name>libwxPropGrid.so.2.11.9</name>
+			<type>1</type>
+			<location>/home/zkirkendoll/workspace/DualImageCaptureWithOpenCV/lib/x86_64/libwxPropGrid.so.2.11.9</location>
+		</link>
+	</linkedResources>
 </projectDescription>
